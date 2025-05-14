@@ -1,6 +1,7 @@
 /* USER CODE BEGIN Header */
 /**
   ******************************************************************************
+  * @author         : JasperXzy
   * @file           : main.c
   * @brief          : Main program body
   ******************************************************************************
@@ -15,6 +16,25 @@
   *
   ******************************************************************************
   */
+/*
+  rst 	 		  -> PB3
+  convstB 	  -> PB4
+  convstA 	  -> PB5
+  STby 	      -> PB6
+  OS12 	      -> PB7
+  OS11 	      -> PB8
+  OS1 	      -> PB9
+
+  frstdata 	  -> PE2
+  busy 	  		-> PE3
+  cs	  			-> PE4
+  rd 	  		  -> PE5
+
+  DoutA(DB7)  -> PA5
+
+  SER         -> 3.3V
+  D15         -> 0 V
+  */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -24,6 +44,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "retarget.h"
+#include "delay.h"
+#include "AD7606.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -82,14 +104,23 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
+  RetargetInit(&huart1);
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-  RetargetInit(&huart1);
+  typedef enum
+  { Bit_RESET = 0,
+    Bit_SET
+  }BitAction;
+  uint8_t dis_buf[40];
+  uint8_t i;
+  uint8_t  temp;
+  int16_t DB_data[8] = {0};
+
+  PeripheralInit();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -99,6 +130,23 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    AD7606_startconvst();
+    temp = HAL_GPIO_ReadPin(GPIOE,GPIO_PIN_3);
+
+    while((temp == Bit_SET))
+    {
+      delay_100ns();
+      temp = HAL_GPIO_ReadPin(GPIOE,GPIO_PIN_3);
+    }
+    delay_us(1);
+    AD7606_read_data(DB_data);
+
+    for(i=0;i<8;i++)
+    {
+      printf((char*)dis_buf,"CH%1d:%8.1f mv  0x%04x %6d\r\n", i+1, (float)(DB_data[i]*5000.0/32768), (uint16_t)(DB_data[i]^0x8000), (uint16_t)(DB_data[i]^0x8000));
+      delay_ms(50000);
+    }
+    delay_ms(50000);
   }
   /* USER CODE END 3 */
 }
@@ -143,7 +191,18 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+/**
+  * @brief      : Peripheral initialization
+  * @input      : None
+  * @return     : None
+  */
+void PeripheralInit(void)
+{
+  delay_ms (500);
+  GPIO_AD7606_Configuration();
+  AD7606_Init();
+  delay_ms (500);
+}
 /* USER CODE END 4 */
 
 /**
