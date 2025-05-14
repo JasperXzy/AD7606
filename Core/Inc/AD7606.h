@@ -30,5 +30,10 @@
 #define clk_Set 	  		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_5, GPIO_PIN_SET)
 #define clk_Reset   		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_5, GPIO_PIN_RESET)
 
-#endif //AD7606_H
+extern void GPIO_AD7606_Configuration(void);
+extern void AD7606_Init(void);
+extern void AD7606_startconvst(void);
+extern void AD7606_reset(void) ;
+extern void AD7606_read_data(int16_t * DB_data);
 
+#endif //AD7606_H
